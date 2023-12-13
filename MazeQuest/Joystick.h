@@ -9,15 +9,13 @@ struct Joystick {
     //  Pins
     const byte X;
     const byte Y;
-    const byte button;
 
     //  Constructor
-    Joystick(byte X, byte Y, byte button) : X(X), Y(Y), button(button) {}
+    Joystick(byte X, byte Y) : X(X), Y(Y) {}
 
     void setup() {
         pinMode(X, INPUT);
         pinMode(Y, INPUT);
-        pinMode(button, INPUT_PULLUP);
     }
 
     //  Read X and Y values with debounce

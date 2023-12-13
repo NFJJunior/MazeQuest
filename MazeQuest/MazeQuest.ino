@@ -4,7 +4,7 @@
 #include "Matrix.h"
 #include "Display.h"
 
-Joystick joystick(A0, A1, 2);
+Joystick joystick(A0, A1);
 Matrix matrix(12, 11, 10);
 Display display(9, 8, 7, 6, 5, 4, 3);
 
@@ -322,7 +322,6 @@ void showWonGame() {
 
 }
 
-//  I promise I will add comments for the final version and refactor a bit
 void menu(const int move) {
     switch (menuState) {
         case MAIN_MENU: {
@@ -610,7 +609,7 @@ void showMatrix(const int move) {
                     break;
                 }
                 case SETTINGS: {
-                    matrix.showImage(MAZE);
+                    matrix.showImage(WRENCH);
 
                     break;
                 }
@@ -635,6 +634,8 @@ void showMatrix(const int move) {
             break;
         }
         case WON_GAME: {
+            matrix.showGame();
+
             break;
         }
     }
