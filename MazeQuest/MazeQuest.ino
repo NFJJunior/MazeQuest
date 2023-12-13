@@ -5,7 +5,7 @@
 #include "Display.h"
 
 Joystick joystick(A0, A1);
-Matrix matrix(12, 11, 10);
+Matrix matrix(12, 11, 10, 13);
 Display display(9, 8, 7, 6, 5, 4, 3);
 
 //  Display states
@@ -98,7 +98,7 @@ void loop() {
 }
 
 ////////////////////////////////////////////////////////////////  Display  ////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MenuState previousMenuState(const MenuState state) {
     return (state - 1 + menuSize) % menuSize;
@@ -123,6 +123,9 @@ AboutState previousAboutState(const AboutState state) {
 AboutState nextAboutState(const AboutState state) {
     return (state + 1) % aboutSize;
 }
+
+//////////////////////////////////////////////////////////////  Show Display //////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void showIntroMessage() {
     display.lcd.clear();
@@ -322,52 +325,60 @@ void showWonGame() {
 
 }
 
-void menu(const int move) {
-    switch (menuState) {
-        case MAIN_MENU: {
-            switch (move) {
-                case UP: {
-                    menuRow = previousMenuState(menuRow);
+/////////////////////////////////////////////////////////////  Display Logic //////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                    showMainMenu();
+
+void introMessage() {
+    if (millis() >= introMessageDelay) {
+        gameState = MENU;
+        menuState = MAIN_MENU;
+        menuRow = START_GAME;
+
+        showMainMenu();
+    }
+}
+
+void mainMenu(const int move) {
+    switch (move) {
+        case UP: {
+            menuRow = previousMenuState(menuRow);
+
+            showMainMenu();
+
+            break;
+        }
+        case DOWN: {
+            menuRow = nextMenuState(menuRow);
+
+            showMainMenu();
+
+            break;
+        }
+        case RIGHT: {
+            menuState = menuRow;
+
+            switch (menuState) {
+                case START_GAME: {
+                    gameState = IN_GAME;
+
+                    gameStartTime = millis();
+                    display.lcd.clear();
+                    showInGame();
 
                     break;
                 }
-                case DOWN: {
-                    menuRow = nextMenuState(menuRow);
+                case SETTINGS: {
+                    settingsState = LCD_BRIGHTNESS;
 
-                    showMainMenu();
+                    showSettings();
 
                     break;
                 }
-                case RIGHT: {
-                    menuState = menuRow;
+                case ABOUT: {
+                    aboutState = GAME;
 
-                    switch (menuState) {
-                        case START_GAME: {
-                            gameState = IN_GAME;
-
-                            gameStartTime = millis();
-                            display.lcd.clear();
-                            showInGame();
-
-                            break;
-                        }
-                        case SETTINGS: {
-                            settingsState = LCD_BRIGHTNESS;
-
-                            showSettings();
-
-                            break;
-                        }
-                        case ABOUT: {
-                            aboutState = GAME;
-
-                            showAbout();
-
-                            break;
-                        }
-                    }
+                    showAbout();
 
                     break;
                 }
@@ -375,90 +386,50 @@ void menu(const int move) {
 
             break;
         }
-        case SETTINGS: {
-            switch (move) {
-                case UP: {
-                    settingsState = previousSettingsState(settingsState);
+    }
+}
+
+void settings(const int move) {
+    switch (move) {
+        case UP: {
+            settingsState = previousSettingsState(settingsState);
+
+            showSettings();
+
+            break;
+        }
+        case DOWN: {
+            settingsState = nextSettingsState(settingsState);
+
+            showSettings();
+
+            break;
+        }
+        case LEFT: {
+            switch (settingsState) {
+                case LCD_BRIGHTNESS: {
+                    if (lcdBrightness > 1) {
+                        EEPROM.get(lcdBrightnessAddress, lcdBrightness);
+                        lcdBrightness --;
+                        EEPROM.put(lcdBrightnessAddress, lcdBrightness);
+
+                        display.setBrightness(lcdBrightness);
+                    }
 
                     showSettings();
 
                     break;
                 }
-                case DOWN: {
-                    settingsState = nextSettingsState(settingsState);
+                case MATRIX_BRIGHTNESS: {
+                    if (matrixBrightness > 1) {
+                        EEPROM.get(matrixBrightnessAddress, matrixBrightness);
+                        matrixBrightness --;
+                        EEPROM.put(matrixBrightnessAddress, matrixBrightness);
+
+                        matrix.setBrightness(matrixBrightness);
+                    }
 
                     showSettings();
-
-                    break;
-                }
-                case LEFT: {
-                    switch (settingsState) {
-                        case LCD_BRIGHTNESS: {
-                            if (lcdBrightness > 1) {
-                                EEPROM.get(lcdBrightnessAddress, lcdBrightness);
-                                lcdBrightness --;
-                                EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-
-                                display.setBrightness(lcdBrightness);
-                            }
-
-                            showSettings();
-
-                            break;
-                        }
-                        case MATRIX_BRIGHTNESS: {
-                            if (matrixBrightness > 1) {
-                                EEPROM.get(matrixBrightnessAddress, matrixBrightness);
-                                matrixBrightness --;
-                                EEPROM.put(matrixBrightnessAddress, matrixBrightness);
-
-                                matrix.setBrightness(matrixBrightness);
-                            }
-
-                            showSettings();
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-                case RIGHT: {
-                    switch (settingsState) {
-                        case LCD_BRIGHTNESS: {
-                            if (lcdBrightness < maxLcdBrightness) {
-                                EEPROM.get(lcdBrightnessAddress, lcdBrightness);
-                                lcdBrightness ++;
-                                EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-
-                                display.setBrightness(lcdBrightness);
-                            }
-
-                            showSettings();
-
-                            break;
-                        }
-                        case MATRIX_BRIGHTNESS: {
-                            if (matrixBrightness < maxLcdBrightness) {
-                                EEPROM.get(matrixBrightnessAddress, matrixBrightness);
-                                matrixBrightness ++;
-                                EEPROM.put(matrixBrightnessAddress, matrixBrightness);
-
-                                matrix.setBrightness(matrixBrightness);
-                            }
-
-                            showSettings();
-
-                            break;
-                        }
-                        case BACK: {
-                            menuState = MAIN_MENU;
-
-                            showMainMenu();
-
-                            break;
-                        }
-                    }
 
                     break;
                 }
@@ -466,24 +437,37 @@ void menu(const int move) {
 
             break;
         }
-        case ABOUT: {
-            switch (move) {
-                case UP: {
-                    aboutState = previousAboutState(aboutState);
+        case RIGHT: {
+            switch (settingsState) {
+                case LCD_BRIGHTNESS: {
+                    if (lcdBrightness < maxLcdBrightness) {
+                        EEPROM.get(lcdBrightnessAddress, lcdBrightness);
+                        lcdBrightness ++;
+                        EEPROM.put(lcdBrightnessAddress, lcdBrightness);
 
-                    showAbout();
+                        display.setBrightness(lcdBrightness);
+                    }
+
+                    showSettings();
 
                     break;
                 }
-                case DOWN: {
-                    aboutState = nextAboutState(aboutState);
+                case MATRIX_BRIGHTNESS: {
+                    if (matrixBrightness < maxLcdBrightness) {
+                        EEPROM.get(matrixBrightnessAddress, matrixBrightness);
+                        matrixBrightness ++;
+                        EEPROM.put(matrixBrightnessAddress, matrixBrightness);
 
-                    showAbout();
+                        matrix.setBrightness(matrixBrightness);
+                    }
+
+                    showSettings();
 
                     break;
                 }
-                case LEFT: {
+                case BACK: {
                     menuState = MAIN_MENU;
+                    menuRow = SETTINGS;
 
                     showMainMenu();
 
@@ -496,16 +480,131 @@ void menu(const int move) {
     }
 }
 
+void about(const int move) {
+    switch (move) {
+        case UP: {
+            aboutState = previousAboutState(aboutState);
+
+            showAbout();
+
+            break;
+        }
+        case DOWN: {
+            aboutState = nextAboutState(aboutState);
+
+            showAbout();
+
+            break;
+        }
+        case LEFT: {
+            menuState = MAIN_MENU;
+            menuRow = ABOUT;
+
+            showMainMenu();
+
+            break;
+        }
+    }
+}
+
+void menu(const int move) {
+    switch (menuState) {
+        case MAIN_MENU: {
+            mainMenu(move);
+
+            break;
+        }
+        case SETTINGS: {
+            settings(move);
+
+            break;
+        }
+        case ABOUT: {
+            about(move);
+
+            break;
+        }
+    }
+}
+
+void inGame() {
+    if (matrix.gameLost) {
+        gameState = LOST_GAME;
+        gameLostState = TRY_AGAIN;
+
+        showLostGame();
+    }
+    else if (matrix.gameWon) {
+        gameState = WON_GAME;
+
+        showWonGame();
+    }
+    else {
+        showInGame();
+    }
+}
+
+void lostGame(const int move) {
+    switch (move) {
+        case LEFT: {
+            switch (gameLostState) {
+                case QUIT: {
+                    gameState = MENU;
+                    menuState = MAIN_MENU;
+                    menuRow = START_GAME;
+
+                    matrix.resetGame();
+
+                    showMainMenu();
+
+                    break;
+                }
+                case TRY_AGAIN: {
+                    gameLostState = QUIT;
+
+                    showLostGame();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case RIGHT: {
+            switch (gameLostState) {
+                case QUIT: {
+                    gameLostState = TRY_AGAIN;
+
+                    showLostGame();
+
+                    break;
+                }
+                case TRY_AGAIN: {
+                    gameState = IN_GAME;
+
+                    matrix.resetGame();
+
+                    gameStartTime = millis();
+                    display.lcd.clear();
+                    showInGame();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+    }
+}
+
+void wonGame(const int move) {
+
+}
+
 void showDisplay(const int move) {
     switch (gameState) {
         case INTRO_MESSAGE: {
-            if (millis() >= introMessageDelay) {
-                gameState = MENU;
-                menuState = MAIN_MENU;
-                menuRow = START_GAME;
-
-                showMainMenu();
-            }
+            introMessage();
 
             break;
         }
@@ -515,77 +614,18 @@ void showDisplay(const int move) {
             break;
         }
         case IN_GAME: {
-            if (matrix.gameLost) {
-                gameState = LOST_GAME;
-                gameLostState = TRY_AGAIN;
-
-                showLostGame();
-            }
-            else if (matrix.gameWon) {
-                gameState = WON_GAME;
-
-                showWonGame();
-            }
-            else {
-                showInGame();
-            }
+            inGame();
 
             break;
         }
         case LOST_GAME: {
-            switch (gameLostState) {
-                case QUIT: {
-                    switch (move) {
-                        case LEFT: {
-                            gameState = MENU;
-                            menuState = MAIN_MENU;
-
-                            matrix.resetGame();
-
-                            showMainMenu();
-
-                            break;
-                        }
-                        case RIGHT: {
-                            gameLostState = TRY_AGAIN;
-
-                            showLostGame();
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-                case TRY_AGAIN: {
-                    switch (move) {
-                        case LEFT: {
-                            gameLostState = QUIT;
-
-                            showLostGame();
-
-                            break;
-                        }
-                        case RIGHT: {
-                            gameState = IN_GAME;
-
-                            matrix.resetGame();
-
-                            gameStartTime = millis();
-                            display.lcd.clear();
-                            showInGame();
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-            }
+            lostGame(move);
 
             break;
         }
         case WON_GAME: {
+            wonGame(move);
+
             break;
         }
     }

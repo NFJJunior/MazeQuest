@@ -5,6 +5,12 @@ struct Position {
     int y;
 };
 
+#define MAZE 0
+#define TROPHY 1
+#define H 2
+#define WRENCH 3
+#define INFO 4
+
 const byte images[5][8] = {
     {
         0b11111111,
@@ -53,12 +59,6 @@ const byte images[5][8] = {
         0b00111100
     }
 };
-
-#define MAZE 0
-#define TROPHY 1
-#define H 2
-#define WRENCH 3
-#define INFO 4
 
 const byte explosionSize = 8;
 const byte explosion[explosionSize][8] = {
@@ -137,40 +137,61 @@ const byte explosion[explosionSize][8] = {
     }
 };
 
+#define EMPTY 0
+#define WALL 1
+#define BOMB 2
+#define RED_LED 3
+#define YELLOW_LED 4
+
 struct Matrix {
     //  Pins
     const byte din;
     const byte clock;
     const byte load;
 
+    const byte redLed;
+
     static const byte maxMatrixSize = 24;
     static const byte fogOfViewSize = 8;
-    byte matrixSize = 20;
+    byte matrixSize = 8;
 
     LedControl lc;
 
+    // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
+    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	//     {1, 0, 3, 2, 3, 0, 0, 1, 0, 3, 0, 0, 3, 0, 0, 3, 0, 3, 2, 1},
+	//     {1, 0, 0, 3, 3, 1, 0, 1, 3, 2, 1, 1, 2, 1, 1, 2, 0, 3, 3, 1},
+	//     {1, 1, 1, 1, 2, 3, 3, 2, 3, 3, 0, 1, 3, 0, 1, 3, 1, 2, 3, 1},
+	//     {1, 3, 0, 0, 3, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 3, 0, 1, 0, 1},
+	//     {1, 2, 3, 1, 3, 0, 1, 3, 2, 3, 1, 3, 2, 3, 3, 2, 3, 1, 0, 1},
+    //     {1, 3, 0, 1, 2, 3, 0, 0, 1, 0, 1, 0, 3, 0, 0, 3, 0, 1, 0, 1},
+    //     {1, 0, 0, 1, 3, 0, 0, 1, 0, 0, 1, 1, 0, 0, 3, 0, 1, 3, 0, 1},
+    //     {1, 3, 0, 0, 1, 3, 3, 2, 3, 0, 1, 2, 3, 3, 2, 3, 1, 2, 3, 1},
+    //     {1, 2, 1, 0, 3, 2, 3, 1, 3, 0, 1, 3, 0, 0, 1, 0, 1, 3, 0, 1},
+    //     {1, 3, 0, 3, 0, 1, 0, 1, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1},
+    //     {1, 0, 1, 2, 3, 1, 0, 1, 3, 0, 1, 0, 0, 0, 1, 3, 2, 3, 0, 1},
+    //     {1, 0, 0, 3, 0, 1, 0, 1, 3, 0, 1, 3, 1, 0, 1, 1, 3, 0, 0, 1},
+    //     {1, 0, 1, 3, 0, 1, 0, 3, 2, 1, 3, 2, 3, 3, 1, 3, 0, 0, 3, 1},
+    //     {1, 3, 3, 2, 3, 1, 0, 0, 3, 0, 0, 3, 3, 2, 1, 2, 3, 3, 2, 1},
+    //     {1, 2, 1, 3, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 3, 3, 0, 1, 1, 1},
+    //     {1, 3, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 2, 3, 0, 0, 0, 1},
+    //     {1, 0, 1, 3, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0, 1},
+    //     {1, 0, 3, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 3, 1},
+    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+    // };
+
     byte matrixMap[maxMatrixSize][maxMatrixSize] = {
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	    {1, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1},
-	    {1, 0, 0, 0, 0, 1, 0, 1, 0, 2, 1, 1, 2, 1, 1, 2, 0, 0, 0, 1},
-	    {1, 1, 1, 1, 2, 0, 0, 2, 0, 0, 0, 1, 0, 0, 1, 0, 1, 2, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1},
-	    {1, 2, 0, 1, 0, 0, 1, 0, 2, 0, 1, 0, 2, 0, 0, 2, 0, 1, 0, 1},
-        {1, 0, 0, 1, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1},
-        {1, 0, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0, 2, 0, 1, 2, 0, 1},
-        {1, 2, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1},
-        {1, 0, 0, 0, 0, 1, 0, 1, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1},
-        {1, 0, 1, 2, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 1},
-        {1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1},
-        {1, 0, 1, 0, 0, 1, 0, 0, 2, 1, 0, 2, 0, 0, 1, 0, 0, 0, 0, 1},
-        {1, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 0, 0, 2, 1},
-        {1, 2, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1},
-        {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1},
-        {1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1},
-        {1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+        {1, 1, 1, 1, 1, 1, 1, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
     };
+
+
 
     //  The four directions the player can go to
     const int directions[4][2] = {
@@ -196,7 +217,7 @@ struct Matrix {
     bool hasKey = false;
 
     //  Constructor
-    Matrix(byte din, byte clock, byte load) : din(din), clock(clock), load(load), lc(LedControl(din, clock, load, 1)) {}
+    Matrix(byte din, byte clock, byte load, byte redLed) : din(din), clock(clock), load(load), redLed(redLed), lc(LedControl(din, clock, load, 1)) {}
 
     void setBrightness(const byte brightness) {
         lc.setIntensity(0, 16 / 8 * brightness - 1);
@@ -205,6 +226,8 @@ struct Matrix {
     void setup() {
         lc.shutdown(0, false);
         lc.clearDisplay(0);
+
+        pinMode(redLed, OUTPUT);
     }
 
     void movePlayer(const int move) {
@@ -219,19 +242,20 @@ struct Matrix {
 
         //  If the next position is the bottom right corner,
         //  the game is won
-        if (temp.x == matrixSize - 1 && temp.y == matrixSize - 1) {
+        if (temp.x == matrixSize - 2 && temp.y == matrixSize - 2) {
             gameWon = true;
 
             return;
         }
 
         //  If the next position is 0, move the player to it
-        if (matrixMap[temp.x][temp.y] == 0) {
+        if (matrixMap[temp.x][temp.y] != 1) {
             playerPosition.x = temp.x;
             playerPosition.y = temp.y;
         }
+        
         //  If the next position is a bomb, the game is lost
-        else if (matrixMap[temp.x][temp.y] == 2) {
+        if (matrixMap[temp.x][temp.y] == 2) {
             gameLost = true;
             gameLostTime = millis();
         }
@@ -292,16 +316,24 @@ struct Matrix {
             for (int col = 0; col < fogOfViewSize; col++) {
                 if (corner.x + row == playerPosition.x && corner.y + col == playerPosition.y) {
                     lc.setLed(0, row, col, playerLedState);
+
+                    continue;
+                }
+
+                if (matrixMap[corner.x + row][corner.y + col] == WALL) {
+                    lc.setLed(0, row, col, HIGH);
                 }
                 else {
-                    if (matrixMap[corner.x + row][corner.y + col] == 1) {
-                        lc.setLed(0, row, col, HIGH);
-                    }
-                    else {
-                        lc.setLed(0, row, col, LOW);
-                    }
+                    lc.setLed(0, row, col, LOW);
                 }
             }
+        }
+
+        if (matrixMap[playerPosition.x][playerPosition.y] == RED_LED) {
+            digitalWrite(redLed, HIGH);
+        }
+        else {
+            digitalWrite(redLed, LOW);
         }
     }
 };
