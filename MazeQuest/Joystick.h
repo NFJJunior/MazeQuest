@@ -70,35 +70,4 @@ struct Joystick {
 
         return NO_MOVE;
     }
-
-    // //  Read button values with debounce
-    // bool readButton() {
-    //     static byte buttonState;
-
-    //     static byte reading;
-    //     static byte lastReading;
-
-    //     static const unsigned int debounceDelay = 50;
-    //     static unsigned long lastDebounceTime;
-
-    //     static bool buttonPressed = false;
-
-    //     reading = digitalRead(button);
-
-    //     if (reading != lastReading) {
-    //         lastDebounceTime = millis();
-    //     }
-
-    //     if (millis() - lastDebounceTime > debounceDelay) {
-    //         if (reading != buttonState && reading == LOW) {
-    //             buttonPressed = true;
-    //         }
-
-    //         buttonState = reading;
-    //     }
-
-    //     lastReading = reading;
-
-    //     return buttonPressed;
-    // }
 };
