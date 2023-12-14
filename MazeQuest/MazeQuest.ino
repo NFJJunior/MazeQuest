@@ -24,6 +24,9 @@ const int introMessageDelay = 2000;
 //  Menu states
 enum MenuState {
     START_GAME,
+    SELECT_LEVEL,
+    HIGHSCORES,
+    HOW_TO_PLAY,
     SETTINGS,
     ABOUT,
     MAIN_MENU
@@ -31,6 +34,8 @@ enum MenuState {
 MenuState menuState = MAIN_MENU;
 MenuState menuRow = START_GAME;
 const byte menuSize = ABOUT - START_GAME + 1;
+
+byte highscoreLevel = 1;
 
 //  Settings states
 enum SettingsState {
@@ -72,25 +77,49 @@ NextGameState nextGameState = PLAY;
 unsigned long gameStartTime = 0;
 
 //  EEPROM addresses for all saved values
-//  Every data address come exactly after the next
 
 //  Player name
-const int nameAddress = 712;
-char name[4];
+const byte nameSize = 4;
+
+const int nameAddress = 0;
+char name[nameSize];
 
 byte namePosition = 0;
 const byte nrLetters = 26;
 const byte ordA = 65;
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const byte nrLevels = 2;
+
+const int levelAddress = nameAddress + sizeof(name);
+byte level;
+
+//  Highscores
+struct Highscore {
+    char names[3][nameSize];
+    int scores[3];
+};
+
+const int highscoresAddress = levelAddress + sizeof(level);
+Highscore highscore;
+
+const int nextAddress = highscoresAddress + sizeof(Highscore) * nrLevels;
+
+// const int level1Address = levelAddress + sizeof(name);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //  LCD brightness
 const int maxLcdBrightness = 8;
+
 const int lcdBrightnessAddress = 256;
 byte lcdBrightness;
 
 //  Matrix brightness
 const int maxMatrixBrightness = 8;
+
 const int matrixBrightnessAddress = lcdBrightnessAddress + sizeof(lcdBrightness);
 byte matrixBrightness;
+
 
 void setup() {
     Serial.begin(9600);
@@ -100,6 +129,8 @@ void setup() {
     display.setup();
 
     EEPROM.get(nameAddress, name);
+    EEPROM.get(levelAddress, level);
+
     EEPROM.get(lcdBrightnessAddress, lcdBrightness);
     EEPROM.get(matrixBrightnessAddress, matrixBrightness);
 
@@ -158,21 +189,37 @@ void showIntroMessage() {
     display.lcd.print(F("Maze Quest!"));
 }
 
-void showMenuRow(const byte menuRow, const byte LcdRow) {
+void showMenuRow(const MenuState menuRow, const byte LcdRow) {
     display.lcd.setCursor(3, LcdRow);
 
     switch (menuRow) {
-        case 0: {
+        case START_GAME: {
             display.lcd.print(F("Start Game"));
 
             break;
         }
-        case 1: {
+        case SELECT_LEVEL: {
+            display.lcd.print(F("Level: "));
+            display.lcd.print(level);
+
+            break;
+        }
+        case HIGHSCORES: {
+            display.lcd.print(F("Highscores"));
+
+            break;
+        }
+        case HOW_TO_PLAY: {
+            display.lcd.print(F("How to play"));
+
+            break;
+        }
+        case SETTINGS: {
             display.lcd.print(F("Settings"));
 
             break;
         }
-        case 2: {
+        case ABOUT: {
             display.lcd.print(F("About"));
 
             break;
@@ -183,8 +230,21 @@ void showMenuRow(const byte menuRow, const byte LcdRow) {
 void showMainMenu() {
     display.lcd.clear();
 
-    display.lcd.setCursor(1, 0);
-    display.lcd.print(F(">"));
+    if (menuRow == SELECT_LEVEL) {
+        if (level > 1) {
+            display.lcd.setCursor(0, 0);
+            display.lcd.print(F("<"));
+        }
+
+        if (level < nrLevels) {
+            display.lcd.setCursor(1, 0);
+            display.lcd.print(F(">"));
+        }
+    }
+    else {
+        display.lcd.setCursor(1, 0);
+        display.lcd.print(F(">"));
+    }
 
     display.lcd.setCursor(15, 0);
     display.lcd.write((byte)UP_ARROW);
@@ -196,9 +256,42 @@ void showMainMenu() {
     showMenuRow(nextMenuState(menuRow), 1);
 }
 
-void showSettingsRow(const byte settingsRow, const byte lcdRow) {
+void showHighscores() {
+    display.lcd.clear();
+
+    display.lcd.setCursor(0, 0);
+    display.lcd.print(F("< Lvl:"));
+    display.lcd.print(highscoreLevel);
+
+    display.lcd.setCursor(8, 0);
+    display.lcd.print(highscore.names[0]);
+    display.lcd.print(F(":"));
+    display.lcd.print(highscore.scores[0]);
+
+    display.lcd.setCursor(15, 0);
+    display.lcd.write((byte)UP_ARROW);
+
+    display.lcd.setCursor(0, 1);
+    display.lcd.print(highscore.names[1]);
+    display.lcd.print(F(":"));
+    display.lcd.print(highscore.scores[1]);
+
+    display.lcd.setCursor(8, 1);
+    display.lcd.print(highscore.names[2]);
+    display.lcd.print(F(":"));
+    display.lcd.print(highscore.scores[2]);
+
+    display.lcd.setCursor(15, 1);
+    display.lcd.write((byte)DOWN_ARROW);
+}
+
+void showHowToPlay() {
+
+}
+
+void showSettingsRow(const SettingsState settingsRow, const byte lcdRow) {
     switch (settingsRow) {
-        case 0: {
+        case LCD_BRIGHTNESS: {
             if (lcdRow == 0) {
                 if (lcdBrightness > 1) {
                     display.lcd.setCursor(0, lcdRow);
@@ -218,7 +311,7 @@ void showSettingsRow(const byte settingsRow, const byte lcdRow) {
 
             break;
         }
-        case 1: {
+        case MATRIX_BRIGHTNESS: {
             if (lcdRow == 0) {
                 if (matrixBrightness > 1) {
                     display.lcd.setCursor(0, lcdRow);
@@ -237,7 +330,7 @@ void showSettingsRow(const byte settingsRow, const byte lcdRow) {
 
             break;
         }
-        case 2: {
+        case BACK: {
             if (lcdRow == 0) {
                 display.lcd.setCursor(1, lcdRow);
                 display.lcd.print(F(">"));
@@ -418,10 +511,19 @@ void mainMenu(const int move) {
 
             break;
         }
-        case RIGHT: {
-            menuState = menuRow;
+        case LEFT: {
+            if (menuRow == SELECT_LEVEL && level > 1) {
+                level --;
 
-            switch (menuState) {
+                EEPROM.put(levelAddress, level);
+            }
+
+            showMainMenu();
+
+            break;
+        }
+        case RIGHT: {
+            switch (menuRow) {
                 case START_GAME: {
                     gameState = IN_GAME;
 
@@ -431,7 +533,31 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                case SELECT_LEVEL: {
+                    if (level < nrLevels) {
+                        level ++;
+
+                        EEPROM.put(levelAddress, level);
+                    }
+
+                    showMainMenu();
+
+                    break;
+                }
+                case HIGHSCORES: {
+                    menuState = HIGHSCORES;
+                    highscoreLevel = 1;
+                    EEPROM.get(highscoresAddress + sizeof(Highscore) * (highscoreLevel - 1), highscore);
+
+                    showHighscores();
+
+                    break;
+                }
+                case HOW_TO_PLAY: {
+                    break;
+                }
                 case SETTINGS: {
+                    menuState = SETTINGS;
                     settingsState = LCD_BRIGHTNESS;
 
                     showSettings();
@@ -439,6 +565,7 @@ void mainMenu(const int move) {
                     break;
                 }
                 case ABOUT: {
+                    menuState = ABOUT;
                     aboutState = GAME;
 
                     showAbout();
@@ -449,6 +576,50 @@ void mainMenu(const int move) {
 
             break;
         }
+    }
+}
+
+void highscores(const int move) {
+    switch (move) {
+        case UP: {
+            highscoreLevel = (highscoreLevel - 2 + nrLevels) % nrLevels + 1;
+            EEPROM.get(highscoresAddress + sizeof(Highscore) * (highscoreLevel - 1), highscore);
+
+            showHighscores();
+
+            break;
+        }
+        case DOWN: {
+            highscoreLevel = highscoreLevel % nrLevels + 1;
+            EEPROM.get(highscoresAddress + sizeof(Highscore) * (highscoreLevel - 1), highscore);
+
+            showHighscores();
+
+            break;
+        }
+        case LEFT: {
+            menuState = MAIN_MENU;
+            menuRow = HIGHSCORES;
+
+            showMainMenu();
+
+            break;
+        }
+    }
+}
+
+void howToPlay(const int move) {
+
+}
+
+void resetHighscores() {
+    for (int i = 0; i < 3; i++) {
+        strcpy(highscore.names[i], "AAA");
+        highscore.scores[i] = 999;
+    }
+
+    for (int i = 0; i < nrLevels; i++) {
+        EEPROM.put(highscoresAddress + sizeof(Highscore) * i, highscore);
     }
 }
 
@@ -567,6 +738,16 @@ void menu(const int move) {
     switch (menuState) {
         case MAIN_MENU: {
             mainMenu(move);
+
+            break;
+        }
+        case HIGHSCORES: {
+            highscores(move);
+
+            break;
+        }
+        case HOW_TO_PLAY: {
+            howToPlay(move);
 
             break;
         }
@@ -784,6 +965,16 @@ void showMatrix(const int move) {
             switch (menuState) {
                 case MAIN_MENU: {
                     matrix.showImage(MAZE);
+
+                    break;
+                }
+                case HIGHSCORES: {
+                    matrix.showImage(TROPHY);
+
+                    break;
+                }
+                case HOW_TO_PLAY: {
+                    matrix.showImage(H);
 
                     break;
                 }

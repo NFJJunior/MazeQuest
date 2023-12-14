@@ -1,8 +1,8 @@
 #include "LedControl.h"
 
 struct Position {
-    int x;
-    int y;
+    byte x;
+    byte y;
 };
 
 #define MAZE 0
@@ -151,11 +151,22 @@ struct Matrix {
 
     const byte redLed;
 
+    //  LedControl
+    LedControl lc;
+
+    //  Player
+    Position playerPosition = {1, 1};
+    byte playerLedState = HIGH;
+
+    //  Map
     static const byte maxMatrixSize = 24;
     static const byte fogOfViewSize = 8;
-    byte matrixSize = 8;
 
-    LedControl lc;
+    //  The position of top-left corner of the fog of view
+    Position corner = {0, 0};
+
+    byte matrixSize = 8;
+    byte matrixMap[maxMatrixSize][maxMatrixSize];
 
     // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
     //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -180,18 +191,26 @@ struct Matrix {
     //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     // };
 
-    byte matrixMap[maxMatrixSize][maxMatrixSize] = {
-        {1, 1, 1, 1, 1, 1, 1, 1},
-	    {1, 0, 2, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1}
-    };
+    // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
+    //     {1, 1, 1, 1, 1, 1, 1, 1},
+	//     {1, 0, 2, 0, 0, 0, 0, 1},
+	//     {1, 0, 0, 0, 0, 0, 0, 1},
+	//     {1, 0, 0, 0, 0, 0, 0, 1},
+	//     {1, 0, 0, 0, 0, 0, 0, 1},
+	//     {1, 0, 0, 0, 0, 0, 1, 1},
+    //     {1, 0, 0, 0, 0, 0, 0, 1},
+    //     {1, 1, 1, 1, 1, 1, 1, 1}
+    // };
 
+    //  Bombs
+    static const byte maxNrBombs = 32;
 
+    byte nrBombs;
+    Position bombs[maxNrBombs];
+
+    //  Key
+    Position keyPosition;
+    bool hasKey = false;
 
     //  The four directions the player can go to
     const int directions[4][2] = {
@@ -201,20 +220,11 @@ struct Matrix {
         {0, 1}   //  RIGHT
     };
 
-    //  Player variables
-    Position playerPosition = {1, 1};
-    byte playerLedState = HIGH;
-
-    //  The position of top-left corner of the fog of view
-    Position corner = {0, 0};
-
+    //  Flags
     bool gameLost = false;
-    unsigned long gameLostTime = 0;
-
     bool gameWon = false;
 
-    //  Flag that tells us if this level has a key
-    bool hasKey = false;
+    unsigned long gameLostTime = 0;
 
     //  Constructor
     Matrix(byte din, byte clock, byte load, byte redLed) : din(din), clock(clock), load(load), redLed(redLed), lc(LedControl(din, clock, load, 1)) {}
@@ -237,8 +247,8 @@ struct Matrix {
             return;
         }
 
-        temp.x = playerPosition.x + directions[move][0];
-        temp.y = playerPosition.y + directions[move][1];
+        temp.x = (byte)((int)playerPosition.x + directions[move][0]);
+        temp.y = (byte)((int)playerPosition.y + directions[move][1]);
 
         //  If the next position is the bottom right corner,
         //  the game is won
@@ -273,8 +283,8 @@ struct Matrix {
 
     //  Find the top-left corner position for the fog of view
     void findCorner() {
-        corner.x = min(max(0, playerPosition.x - 3), matrixSize - fogOfViewSize);
-        corner.y = min(max(0, playerPosition.y - 3), matrixSize - fogOfViewSize);
+        corner.x = (byte)min(max(0, (int)playerPosition.x - 3), matrixSize - fogOfViewSize);
+        corner.y = (byte)min(max(0, (int)playerPosition.y - 3), matrixSize - fogOfViewSize);
     }
 
     void resetGame() {
