@@ -14,7 +14,8 @@ enum GameState {
     MENU,
     IN_GAME,
     LOST_GAME,
-    WON_GAME
+    WON_GAME,
+    NEXT_GAME
 };
 GameState gameState = INTRO_MESSAGE;
 
@@ -40,7 +41,6 @@ enum SettingsState {
 SettingsState settingsState = LCD_BRIGHTNESS;
 const byte settingsSize = BACK - LCD_BRIGHTNESS + 1;
 
-
 //  About states
 enum AboutState {
     GAME,
@@ -51,26 +51,46 @@ AboutState aboutState = GAME;
 const byte aboutSize = GITHUB - GAME + 1;
 
 //  Game lost states
-enum GameLostState {
-    QUIT,
+enum LostGameState {
+    QUIT_LOST,
     TRY_AGAIN
 };
-GameLostState gameLostState = TRY_AGAIN;
+LostGameState lostGameState = TRY_AGAIN;
+
+enum WonGameState {
+    NAME,
+    NEXT
+};
+WonGameState wonGameState = NEXT;
+
+enum NextGameState {
+    QUIT_NEXT,
+    PLAY
+};
+NextGameState nextGameState = PLAY;
 
 unsigned long gameStartTime = 0;
 
 //  EEPROM addresses for all saved values
 //  Every data address come exactly after the next
 
+//  Player name
+const int nameAddress = 712;
+char name[4];
+
+byte namePosition = 0;
+const byte nrLetters = 26;
+const byte ordA = 65;
+
 //  LCD brightness
 const int maxLcdBrightness = 8;
 const int lcdBrightnessAddress = 256;
-byte lcdBrightness = 8;
+byte lcdBrightness;
 
 //  Matrix brightness
 const int maxMatrixBrightness = 8;
 const int matrixBrightnessAddress = lcdBrightnessAddress + sizeof(lcdBrightness);
-byte matrixBrightness = 2;
+byte matrixBrightness;
 
 void setup() {
     Serial.begin(9600);
@@ -79,6 +99,7 @@ void setup() {
     matrix.setup();
     display.setup();
 
+    EEPROM.get(nameAddress, name);
     EEPROM.get(lcdBrightnessAddress, lcdBrightness);
     EEPROM.get(matrixBrightnessAddress, matrixBrightness);
 
@@ -311,7 +332,7 @@ void showLostGame() {
     display.lcd.setCursor(7, 1);
     display.lcd.print(F("Try again"));
 
-    if (gameLostState == QUIT) {
+    if (lostGameState == QUIT_LOST) {
         display.lcd.setCursor(0, 1);
         display.lcd.print(F("<"));
     }
@@ -322,7 +343,49 @@ void showLostGame() {
 }
 
 void showWonGame() {
+    display.lcd.clear();
 
+    display.lcd.setCursor(0, 0);
+    display.lcd.print(F("You won level 1!"));
+    
+    display.lcd.setCursor(0, 1);
+    display.lcd.print(F("Name:"));
+    display.lcd.print(name);
+
+    display.lcd.setCursor(11, 1);
+    display.lcd.print(F("Next"));
+
+    if (wonGameState == NAME) {
+        display.lcd.setCursor(5 + namePosition, 1);
+        display.lcd.cursor();
+    }
+    else {
+        display.lcd.setCursor(10, 1);
+        display.lcd.print(F(">"));
+        display.lcd.noCursor();
+    }
+}
+
+void showNextGame() {
+    display.lcd.clear();
+
+    display.lcd.setCursor(4, 0);
+    display.lcd.print(F("LEVEL: 2"));
+
+    display.lcd.setCursor(2, 1);
+    display.lcd.print("QUIT");
+
+    display.lcd.setCursor(10, 1);
+    display.lcd.print("PLAY");
+
+    if (nextGameState == QUIT_NEXT) {
+        display.lcd.setCursor(1, 1);
+        display.lcd.print("<");
+    }
+    else {
+        display.lcd.setCursor(9, 1);
+        display.lcd.print(">");
+    }
 }
 
 /////////////////////////////////////////////////////////////  Display Logic //////////////////////////////////////////////////////////////
@@ -409,10 +472,7 @@ void settings(const int move) {
             switch (settingsState) {
                 case LCD_BRIGHTNESS: {
                     if (lcdBrightness > 1) {
-                        EEPROM.get(lcdBrightnessAddress, lcdBrightness);
                         lcdBrightness --;
-                        EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-
                         display.setBrightness(lcdBrightness);
                     }
 
@@ -422,10 +482,7 @@ void settings(const int move) {
                 }
                 case MATRIX_BRIGHTNESS: {
                     if (matrixBrightness > 1) {
-                        EEPROM.get(matrixBrightnessAddress, matrixBrightness);
                         matrixBrightness --;
-                        EEPROM.put(matrixBrightnessAddress, matrixBrightness);
-
                         matrix.setBrightness(matrixBrightness);
                     }
 
@@ -441,10 +498,8 @@ void settings(const int move) {
             switch (settingsState) {
                 case LCD_BRIGHTNESS: {
                     if (lcdBrightness < maxLcdBrightness) {
-                        EEPROM.get(lcdBrightnessAddress, lcdBrightness);
                         lcdBrightness ++;
                         EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-
                         display.setBrightness(lcdBrightness);
                     }
 
@@ -454,10 +509,8 @@ void settings(const int move) {
                 }
                 case MATRIX_BRIGHTNESS: {
                     if (matrixBrightness < maxLcdBrightness) {
-                        EEPROM.get(matrixBrightnessAddress, matrixBrightness);
                         matrixBrightness ++;
                         EEPROM.put(matrixBrightnessAddress, matrixBrightness);
-
                         matrix.setBrightness(matrixBrightness);
                     }
 
@@ -468,6 +521,9 @@ void settings(const int move) {
                 case BACK: {
                     menuState = MAIN_MENU;
                     menuRow = SETTINGS;
+
+                    EEPROM.put(lcdBrightnessAddress, lcdBrightness);
+                    EEPROM.put(matrixBrightnessAddress, matrixBrightness);
 
                     showMainMenu();
 
@@ -530,12 +586,13 @@ void menu(const int move) {
 void inGame() {
     if (matrix.gameLost) {
         gameState = LOST_GAME;
-        gameLostState = TRY_AGAIN;
+        lostGameState = TRY_AGAIN;
 
         showLostGame();
     }
     else if (matrix.gameWon) {
         gameState = WON_GAME;
+        wonGameState = NEXT;
 
         showWonGame();
     }
@@ -547,49 +604,37 @@ void inGame() {
 void lostGame(const int move) {
     switch (move) {
         case LEFT: {
-            switch (gameLostState) {
-                case QUIT: {
-                    gameState = MENU;
-                    menuState = MAIN_MENU;
-                    menuRow = START_GAME;
+            if (lostGameState == QUIT_LOST) {
+                gameState = MENU;
+                menuState = MAIN_MENU;
+                menuRow = START_GAME;
 
-                    matrix.resetGame();
+                matrix.resetGame();
 
-                    showMainMenu();
+                showMainMenu();
+            }
+            else {
+                lostGameState = QUIT_LOST;
 
-                    break;
-                }
-                case TRY_AGAIN: {
-                    gameLostState = QUIT;
-
-                    showLostGame();
-
-                    break;
-                }
+                showLostGame();
             }
 
             break;
         }
         case RIGHT: {
-            switch (gameLostState) {
-                case QUIT: {
-                    gameLostState = TRY_AGAIN;
+            if (lostGameState == QUIT_LOST) {
+                lostGameState = TRY_AGAIN;
 
-                    showLostGame();
+                showLostGame();
+            }
+            else {
+                gameState = IN_GAME;
 
-                    break;
-                }
-                case TRY_AGAIN: {
-                    gameState = IN_GAME;
+                matrix.resetGame();
+                gameStartTime = millis();
 
-                    matrix.resetGame();
-
-                    gameStartTime = millis();
-                    display.lcd.clear();
-                    showInGame();
-
-                    break;
-                }
+                display.lcd.clear();
+                showInGame();
             }
 
             break;
@@ -598,7 +643,96 @@ void lostGame(const int move) {
 }
 
 void wonGame(const int move) {
+    switch (move) {
+        case UP: {
+            if (wonGameState == NAME) {
+                name[namePosition] = (name[namePosition] - ordA - 1 + nrLetters) % nrLetters + ordA;
 
+                showWonGame();
+            }
+
+            break;
+        }
+        case DOWN: {
+            if (wonGameState == NAME) {
+                name[namePosition] = (name[namePosition] - ordA + 1) % nrLetters + ordA;
+
+                showWonGame();
+            }
+
+            break;
+        }
+        case LEFT: {
+            if (wonGameState == NAME) {
+                namePosition = max(0, namePosition - 1);
+            }
+            else {
+                wonGameState = NAME;
+                namePosition = 2;
+            }
+
+            showWonGame();
+
+            break;
+        }
+        case RIGHT: {
+            if (wonGameState == NAME) {
+                if (namePosition == 2) {
+                    wonGameState = NEXT;
+                }
+                else {
+                    namePosition ++;
+                }
+
+                showWonGame();
+            }
+            else {
+                gameState = NEXT_GAME;
+                nextGameState = PLAY;
+
+                EEPROM.put(nameAddress, name);
+
+                showNextGame();
+            }
+
+            break;
+        }
+    }
+}
+
+void nextGame(const int move) {
+    switch(move) {
+        case LEFT: {
+            if (nextGameState == QUIT_NEXT) {
+                gameState = MENU;
+                menuState = MAIN_MENU;
+                menuRow = START_GAME;
+
+                matrix.resetGame();
+
+                showMainMenu();
+            }
+            else {
+                nextGameState = QUIT_NEXT;
+
+                showNextGame();
+            }
+
+            break;
+        }
+        case RIGHT: {
+            if (nextGameState == QUIT_NEXT) {
+                nextGameState = PLAY;
+
+                showNextGame();
+            }
+            else {
+
+            }
+
+            break;
+        }
+    }
 }
 
 void showDisplay(const int move) {
@@ -625,6 +759,11 @@ void showDisplay(const int move) {
         }
         case WON_GAME: {
             wonGame(move);
+
+            break;
+        }
+        case NEXT_GAME: {
+            nextGame(move);
 
             break;
         }
