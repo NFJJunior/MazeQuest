@@ -89,11 +89,24 @@ byte namePosition = 0;
 const byte nrLetters = 26;
 const byte ordA = 65;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  Level
 const byte nrLevels = 2;
 
 const int levelAddress = nameAddress + sizeof(name);
 byte level;
+
+//  Maps
+struct Map {
+    byte mapSize;
+    byte matrixMap[matrix.maxMatrixSize][matrix.maxMatrixSize / 8 + (matrix.maxMatrixSize % 8 != 0)];
+    byte nrBombs;
+    Position bombs[matrix.maxNrBombs];
+    Position keyPosition;
+
+};
+
+const int mapsAddress = levelAddress + sizeof(level);
+Map levelMap;
 
 //  Highscores
 struct Highscore {
@@ -101,18 +114,15 @@ struct Highscore {
     int scores[3];
 };
 
-const int highscoresAddress = levelAddress + sizeof(level);
+const int highscoresAddress = mapsAddress + sizeof(Map) * nrLevels;
 Highscore highscore;
 
 const int nextAddress = highscoresAddress + sizeof(Highscore) * nrLevels;
 
-// const int level1Address = levelAddress + sizeof(name);
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 //  LCD brightness
 const int maxLcdBrightness = 8;
 
-const int lcdBrightnessAddress = 256;
+const int lcdBrightnessAddress = highscoresAddress + sizeof(Highscore) * nrLevels;
 byte lcdBrightness;
 
 //  Matrix brightness
@@ -132,6 +142,8 @@ void setup() {
     EEPROM.get(nameAddress, name);
     EEPROM.get(levelAddress, level);
 
+    matrixInit();
+
     EEPROM.get(lcdBrightnessAddress, lcdBrightness);
     EEPROM.get(matrixBrightnessAddress, matrixBrightness);
 
@@ -148,6 +160,28 @@ void loop() {
 
     showMatrix(move);
     showDisplay(move);
+}
+
+void matrixInit() {
+    EEPROM.get(mapsAddress + sizeof(Map) * (level - 1), levelMap);
+
+    matrix.matrixSize = levelMap.mapSize;
+    for (int i = 0; i < matrix.maxMatrixSize; i++) {
+        for (int j = 0; j < matrix.maxMatrixSize; j++) {
+            matrix.matrixMap[i][j] = bitRead(levelMap.matrixMap[i][j / 8], 7 - (j % 8));
+        }
+    }
+
+    matrix.nrBombs = levelMap.nrBombs;
+    for (int i = 0; i < matrix.nrBombs; i++) {
+        matrix.matrixMap[levelMap.bombs[i].x][levelMap.bombs[i].y] = 2;
+
+        for (int k = 0; k < 3; k++) {
+            matrix.matrixMap[levelMap.bombs[i].x + matrix.directions[k][0]][levelMap.bombs[i].y + matrix.directions[k][1]] = 3;
+        }
+    }
+
+    matrix.resetGame();
 }
 
 ////////////////////////////////////////////////////////////////  Display  ////////////////////////////////////////////////////////////////
@@ -414,8 +448,9 @@ void showAbout() {
 
 void showInGame() {
     display.lcd.setCursor(0, 0);
-    display.lcd.print(F("Level:1 "));
-    display.lcd.print(F("Time:"));
+    display.lcd.print(F("Level:"));
+    display.lcd.print(level);
+    display.lcd.print(F(" Time:"));
     display.lcd.print((millis() - gameStartTime) / 1000);
 
     if (matrix.hasKey) {
@@ -451,7 +486,9 @@ void showWonGame() {
     display.lcd.clear();
 
     display.lcd.setCursor(0, 0);
-    display.lcd.print(F("You won level 1!"));
+    display.lcd.print(F("You won level "));
+    display.lcd.print(level);
+    display.lcd.print(F("!"));
     
     display.lcd.setCursor(0, 1);
     display.lcd.print(F("Name:"));
@@ -475,13 +512,14 @@ void showNextGame() {
     display.lcd.clear();
 
     display.lcd.setCursor(4, 0);
-    display.lcd.print(F("LEVEL: 2"));
+    display.lcd.print(F("Level: "));
+    display.lcd.print(level + 1);
 
     display.lcd.setCursor(2, 1);
-    display.lcd.print("QUIT");
+    display.lcd.print("Quit");
 
     display.lcd.setCursor(10, 1);
-    display.lcd.print("PLAY");
+    display.lcd.print("Play");
 
     if (nextGameState == QUIT_NEXT) {
         display.lcd.setCursor(1, 1);
@@ -526,8 +564,8 @@ void mainMenu(const int move) {
         case LEFT: {
             if (menuRow == SELECT_LEVEL && level > 1) {
                 level --;
-
                 EEPROM.put(levelAddress, level);
+                matrixInit();
             }
 
             showMainMenu();
@@ -548,8 +586,8 @@ void mainMenu(const int move) {
                 case SELECT_LEVEL: {
                     if (level < nrLevels) {
                         level ++;
-
                         EEPROM.put(levelAddress, level);
+                        matrixInit();
                     }
 
                     showMainMenu();
@@ -927,7 +965,15 @@ void nextGame(const int move) {
                 showNextGame();
             }
             else {
+                gameState = IN_GAME;
 
+                if (level < nrLevels) {
+                    level ++;
+                    EEPROM.put(levelAddress, level);
+                    matrixInit();
+                }
+
+                showInGame();
             }
 
             break;

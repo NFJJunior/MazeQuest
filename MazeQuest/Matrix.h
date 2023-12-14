@@ -166,7 +166,7 @@ struct Matrix {
     Position corner = {0, 0};
 
     byte matrixSize = 8;
-    byte matrixMap[maxMatrixSize][maxMatrixSize];
+    // byte matrixMap[maxMatrixSize][maxMatrixSize];
 
     // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
     //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -191,16 +191,16 @@ struct Matrix {
     //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     // };
 
-    // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
-    //     {1, 1, 1, 1, 1, 1, 1, 1},
-	//     {1, 0, 2, 0, 0, 0, 0, 1},
-	//     {1, 0, 0, 0, 0, 0, 0, 1},
-	//     {1, 0, 0, 0, 0, 0, 0, 1},
-	//     {1, 0, 0, 0, 0, 0, 0, 1},
-	//     {1, 0, 0, 0, 0, 0, 1, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 1, 1, 1, 1, 1, 1, 1}
-    // };
+    byte matrixMap[maxMatrixSize][maxMatrixSize] = {
+        {1, 1, 1, 1, 1, 1, 1, 1},
+	    {1, 0, 2, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 0, 1},
+	    {1, 0, 0, 0, 0, 0, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+    };
 
     //  Bombs
     static const byte maxNrBombs = 32;
