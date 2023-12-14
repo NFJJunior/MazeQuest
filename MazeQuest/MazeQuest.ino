@@ -41,6 +41,7 @@ byte highscoreLevel = 1;
 enum SettingsState {
     LCD_BRIGHTNESS,
     MATRIX_BRIGHTNESS,
+    RESET_HIGHSCORES,
     BACK
 };
 SettingsState settingsState = LCD_BRIGHTNESS;
@@ -82,7 +83,7 @@ unsigned long gameStartTime = 0;
 const byte nameSize = 4;
 
 const int nameAddress = 0;
-char name[nameSize];
+char name[nameSize] = "IAN";
 
 byte namePosition = 0;
 const byte nrLetters = 26;
@@ -183,7 +184,7 @@ void showIntroMessage() {
     display.lcd.clear();
 
     display.lcd.setCursor(3, 0);
-    display.lcd.print(F("Welcome to"));
+    display.lcd.print(F("Welcome To"));
 
     display.lcd.setCursor(3, 1);
     display.lcd.print(F("Maze Quest!"));
@@ -210,7 +211,7 @@ void showMenuRow(const MenuState menuRow, const byte LcdRow) {
             break;
         }
         case HOW_TO_PLAY: {
-            display.lcd.print(F("How to play"));
+            display.lcd.print(F("How To Play"));
 
             break;
         }
@@ -327,6 +328,17 @@ void showSettingsRow(const SettingsState settingsRow, const byte lcdRow) {
             display.lcd.setCursor(3, lcdRow);
             display.lcd.print(F("MTX Light:"));
             display.lcd.print(matrixBrightness);
+
+            break;
+        }
+        case RESET_HIGHSCORES: {
+            if (lcdRow == 0) {
+                display.lcd.setCursor(1, lcdRow);
+                display.lcd.print(F(">"));
+            }
+
+            display.lcd.setCursor(3, lcdRow);
+            display.lcd.print(F("Reset HS"));
 
             break;
         }
@@ -684,6 +696,13 @@ void settings(const int move) {
                         EEPROM.put(matrixBrightnessAddress, matrixBrightness);
                         matrix.setBrightness(matrixBrightness);
                     }
+
+                    showSettings();
+
+                    break;
+                }
+                case RESET_HIGHSCORES: {
+                    resetHighscores();
 
                     showSettings();
 
