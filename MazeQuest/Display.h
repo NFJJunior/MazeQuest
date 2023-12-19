@@ -10,7 +10,7 @@ byte customChars[3][8] = {
 //  Defines for custom chars
 #define UP_ARROW 0
 #define DOWN_ARROW 1
-#define KEY 2
+#define LCD_KEY 2
 
 struct Display {
     //  Pins
@@ -38,7 +38,7 @@ struct Display {
     void setup() {
         lcd.createChar(UP_ARROW, customChars[UP_ARROW]);
         lcd.createChar(DOWN_ARROW, customChars[DOWN_ARROW]);
-        lcd.createChar(KEY, customChars[KEY]);
+        lcd.createChar(LCD_KEY, customChars[LCD_KEY]);
 
         lcd.begin(16, 2);
 

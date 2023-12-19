@@ -140,8 +140,9 @@ const byte explosion[explosionSize][8] = {
 #define EMPTY 0
 #define WALL 1
 #define BOMB 2
-#define RED_LED 3
-#define YELLOW_LED 4
+#define KEY 3
+#define RED_LED 4
+#define DOOR 5
 
 struct Matrix {
     //  Pins
@@ -150,6 +151,7 @@ struct Matrix {
     const byte load;
 
     const byte redLed;
+    const byte yellowLed;
 
     //  LedControl
     LedControl lc;
@@ -166,44 +168,10 @@ struct Matrix {
     Position corner = {0, 0};
 
     byte matrixSize = 8;
-    // byte matrixMap[maxMatrixSize][maxMatrixSize];
-
-    // byte matrixMap[maxMatrixSize][maxMatrixSize] = {
-    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	//     {1, 0, 3, 2, 3, 0, 0, 1, 0, 3, 0, 0, 3, 0, 0, 3, 0, 3, 2, 1},
-	//     {1, 0, 0, 3, 3, 1, 0, 1, 3, 2, 1, 1, 2, 1, 1, 2, 0, 3, 3, 1},
-	//     {1, 1, 1, 1, 2, 3, 3, 2, 3, 3, 0, 1, 3, 0, 1, 3, 1, 2, 3, 1},
-	//     {1, 3, 0, 0, 3, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 3, 0, 1, 0, 1},
-	//     {1, 2, 3, 1, 3, 0, 1, 3, 2, 3, 1, 3, 2, 3, 3, 2, 3, 1, 0, 1},
-    //     {1, 3, 0, 1, 2, 3, 0, 0, 1, 0, 1, 0, 3, 0, 0, 3, 0, 1, 0, 1},
-    //     {1, 0, 0, 1, 3, 0, 0, 1, 0, 0, 1, 1, 0, 0, 3, 0, 1, 3, 0, 1},
-    //     {1, 3, 0, 0, 1, 3, 3, 2, 3, 0, 1, 2, 3, 3, 2, 3, 1, 2, 3, 1},
-    //     {1, 2, 1, 0, 3, 2, 3, 1, 3, 0, 1, 3, 0, 0, 1, 0, 1, 3, 0, 1},
-    //     {1, 3, 0, 3, 0, 1, 0, 1, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1},
-    //     {1, 0, 1, 2, 3, 1, 0, 1, 3, 0, 1, 0, 0, 0, 1, 3, 2, 3, 0, 1},
-    //     {1, 0, 0, 3, 0, 1, 0, 1, 3, 0, 1, 3, 1, 0, 1, 1, 3, 0, 0, 1},
-    //     {1, 0, 1, 3, 0, 1, 0, 3, 2, 1, 3, 2, 3, 3, 1, 3, 0, 0, 3, 1},
-    //     {1, 3, 3, 2, 3, 1, 0, 0, 3, 0, 0, 3, 3, 2, 1, 2, 3, 3, 2, 1},
-    //     {1, 2, 1, 3, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 3, 3, 0, 1, 1, 1},
-    //     {1, 3, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 2, 3, 0, 0, 0, 1},
-    //     {1, 0, 1, 3, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0, 1},
-    //     {1, 0, 3, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 3, 1},
-    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-    // };
-
-    byte matrixMap[maxMatrixSize][maxMatrixSize] = {
-        {1, 1, 1, 1, 1, 1, 1, 1},
-	    {1, 0, 2, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 0, 1},
-	    {1, 0, 0, 0, 0, 0, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1}
-    };
+    byte matrixMap[maxMatrixSize][maxMatrixSize];
 
     //  Bombs
-    static const byte maxNrBombs = 32;
+    static const byte maxNrBombs = 37;
 
     byte nrBombs;
     Position bombs[maxNrBombs];
@@ -211,6 +179,12 @@ struct Matrix {
     //  Key
     Position keyPosition;
     bool hasKey = false;
+    bool hasPickedUp = false;
+
+    //  Door
+    const Position doorPositions[3] = {{4, 6}, {0, 0}, {0, 0}};
+    Position doorPosition;
+    byte doorLedState = HIGH;
 
     //  The four directions the player can go to
     const int directions[4][2] = {
@@ -227,7 +201,7 @@ struct Matrix {
     unsigned long gameLostTime = 0;
 
     //  Constructor
-    Matrix(byte din, byte clock, byte load, byte redLed) : din(din), clock(clock), load(load), redLed(redLed), lc(LedControl(din, clock, load, 1)) {}
+    Matrix(byte din, byte clock, byte load, byte redLed, byte yellowLed) : din(din), clock(clock), load(load), redLed(redLed), yellowLed(yellowLed), lc(LedControl(din, clock, load, 1)) {}
 
     void setBrightness(const byte brightness) {
         lc.setIntensity(0, 16 / 8 * brightness - 1);
@@ -238,10 +212,13 @@ struct Matrix {
         lc.clearDisplay(0);
 
         pinMode(redLed, OUTPUT);
+        pinMode(yellowLed, OUTPUT);
     }
 
     void movePlayer(const int move) {
         static Position temp;
+
+        hasPickedUp = false;
 
         if (move == -1) {
             return;
@@ -258,25 +235,65 @@ struct Matrix {
             return;
         }
 
-        //  If the next position is 0, move the player to it
-        if (matrixMap[temp.x][temp.y] != 1) {
-            playerPosition.x = temp.x;
-            playerPosition.y = temp.y;
-        }
-        
-        //  If the next position is a bomb, the game is lost
-        if (matrixMap[temp.x][temp.y] == 2) {
-            gameLost = true;
-            gameLostTime = millis();
+        switch (matrixMap[temp.x][temp.y]) {
+            case EMPTY: {
+                playerPosition.x = temp.x;
+                playerPosition.y = temp.y;
+
+                break;
+            }
+            case BOMB: {
+                gameLost = true;
+                gameLostTime = millis();
+
+                break;
+            }
+            case KEY: {
+                playerPosition.x = temp.x;
+                playerPosition.y = temp.y;
+
+                matrixMap[temp.x][temp.y] = EMPTY;
+                hasKey = true;
+                hasPickedUp = true;
+
+                break;
+            }
+            case RED_LED: {
+                playerPosition.x = temp.x;
+                playerPosition.y = temp.y;
+
+                break;
+            }
+            case DOOR: {
+                if (hasKey) {
+                    playerPosition.x = temp.x;
+                    playerPosition.y = temp.y;
+
+                    matrixMap[temp.x][temp.y] = EMPTY;
+                    doorLedState = HIGH;
+                }
+
+                break;
+            }
         }
     }
 
     void changePlayerLed() {
-        static const unsigned int blinkDelay = 250;
+        static const unsigned int blinkDelay = 200;
         static unsigned long lastBlinkTime;
 
         if (millis() - lastBlinkTime >= blinkDelay) {
             playerLedState = !playerLedState;
+            lastBlinkTime = millis();
+        }
+    }
+
+    void changeDoorLed() {
+        static const unsigned int blinkDelay = 500;
+        static unsigned long lastBlinkTime;
+
+        if (millis() - lastBlinkTime >= blinkDelay) {
+            doorLedState = !doorLedState;
             lastBlinkTime = millis();
         }
     }
@@ -291,8 +308,21 @@ struct Matrix {
         playerPosition.x = 1;
         playerPosition.y = 1;
 
+        digitalWrite(redLed, LOW);
+        digitalWrite(yellowLed, LOW);
+
+        if (keyPosition.x != 0) {
+            matrixMap[keyPosition.x][keyPosition.y] = KEY;
+        }
+
+        if (doorPosition.x != 0) {
+            matrixMap[doorPosition.x][doorPosition.y] = DOOR;
+        }
+
         gameLost = false;
         gameWon = false;
+
+        hasKey = false;
     }
 
     void showImage(const byte image) {
@@ -320,12 +350,21 @@ struct Matrix {
         }
 
         changePlayerLed();
+        if (matrixMap[doorPosition.x][doorPosition.y] == DOOR) {
+            changeDoorLed();
+        }
         findCorner();
 
         for (int row = 0; row < fogOfViewSize; row++) {
             for (int col = 0; col < fogOfViewSize; col++) {
                 if (corner.x + row == playerPosition.x && corner.y + col == playerPosition.y) {
                     lc.setLed(0, row, col, playerLedState);
+
+                    continue;
+                }
+
+                if (corner.x + row == doorPosition.x && corner.y + col == doorPosition.y && matrixMap[doorPosition.x][doorPosition.y] == DOOR) {
+                    lc.setLed(0, row, col, doorLedState);
 
                     continue;
                 }
@@ -345,6 +384,16 @@ struct Matrix {
         else {
             digitalWrite(redLed, LOW);
         }
+
+        for (int k = 0; k < 4; k++) {
+            if (matrixMap[playerPosition.x + directions[k][0]][playerPosition.y + directions[k][1]] == KEY) {
+                digitalWrite(yellowLed, HIGH);
+
+                return;
+            }
+        }
+
+        digitalWrite(yellowLed, LOW);
     }
 };
 
