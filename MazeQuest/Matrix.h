@@ -182,7 +182,7 @@ struct Matrix {
     bool hasPickedUp = false;
 
     //  Door
-    const Position doorPositions[3] = {{4, 6}, {0, 0}, {0, 0}};
+    const Position doorPositions[2] = {{4, 6}, {8, 9}};
     Position doorPosition;
     byte doorLedState = HIGH;
 
