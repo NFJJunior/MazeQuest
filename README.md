@@ -32,6 +32,8 @@ The yellow LED is on when you are adjacent to the key.
 
 The player blinks rapidly, while the door blinks slowly.
 
+There are six levels in total.
+
 ## Components
 * Arduino UNO board
 * 2 medium breadboards
