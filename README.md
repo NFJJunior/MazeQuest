@@ -51,4 +51,5 @@ There are six levels in total.
 ## Demo Video
 
 ## Setup
+![Setup](https://github.com/NFJJunior/MazeQuest/blob/main/setup.jpeg)
 
