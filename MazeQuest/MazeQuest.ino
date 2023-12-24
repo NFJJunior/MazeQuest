@@ -10,7 +10,7 @@ Matrix matrix(13, 12, 11, 2, 1);
 Display display(9, 8, 7, 6, 5, 4, 10);
 ezBuzzer buzzer(3);
 
-//  Display states
+//  Game states
 enum GameState {
     INTRO_MESSAGE,
     MENU,
@@ -69,19 +69,21 @@ enum AboutState {
 AboutState aboutState = GAME;
 const byte aboutSize = GITHUB - GAME + 1;
 
-//  Game lost states
+//  Lost game states
 enum LostGameState {
     QUIT_LOST,
     TRY_AGAIN
 };
 LostGameState lostGameState = TRY_AGAIN;
 
+//  Won game states
 enum WonGameState {
     NAME,
     NEXT
 };
 WonGameState wonGameState = NEXT;
 
+//  Next game states
 enum NextGameState {
     QUIT_NEXT,
     PLAY
@@ -99,6 +101,7 @@ const byte nameSize = 4;
 const int nameAddress = 0;
 char name[nameSize];
 
+//  Variables that help with changing the name
 byte namePosition = 0;
 const byte nrLetters = 26;
 const byte ordA = 65;
@@ -116,47 +119,10 @@ struct Map {
     byte nrBombs;
     Position bombs[matrix.maxNrBombs];
     Position keyPosition;
-
 };
 
 const int mapsAddress = levelAddress + sizeof(level);
-Map levelMap = {
-    16,
-    {
-        {B11111111, B11111111, B00000000},
-        {B10000100, B00000001, B00000000},
-        {B10100101, B10011101, B00000000},
-        {B10100100, B00000001, B00000000},
-        {B10000000, B01100101, B00000000},
-        {B10011001, B00001001, B00000000},
-        {B11000000, B01110001, B00000000},
-        {B10001001, B00000001, B00000000},
-        {B10010001, B11111111, B00000000},
-        {B10000001, B00000001, B00000000},
-        {B10100111, B01001101, B00000000},
-        {B10100001, B00100001, B00000000},
-        {B10100101, B00000101, B00000000},
-        {B10010101, B00100101, B00000000},
-        {B10000001, B00000001, B00000000},
-        {B11111111, B11111111, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000},
-        {B00000000, B00000000, B00000000}
-    },
-    20,
-    {
-        {1, 8}, {3, 1}, {3, 3}, {3, 11}, {4, 5}, {4, 8},
-        {6, 7}, {6, 13}, {7, 10}, {9, 2}, {9, 5}, {9, 14},
-        {10, 11}, {11, 3}, {12, 9}, {12, 12}, {14, 2}, {14, 5},
-        {14, 8}, {14, 13}
-    },
-    {14, 4}
-};
+Map levelMap;
 
 //  Highscores
 struct Highscore {
@@ -167,19 +133,17 @@ struct Highscore {
 const int highscoresAddress = mapsAddress + sizeof(Map) * nrLevels;
 Highscore highscore;
 
-const int nextAddress = highscoresAddress + sizeof(Highscore) * nrLevels;
-
 //  LCD brightness
 const int maxLcdBrightness = 8;
 
 const int lcdBrightnessAddress = highscoresAddress + sizeof(Highscore) * nrLevels;
-byte lcdBrightness = 8;
+byte lcdBrightness;
 
 //  Matrix brightness
 const int maxMatrixBrightness = 8;
 
 const int matrixBrightnessAddress = lcdBrightnessAddress + sizeof(lcdBrightness);
-byte matrixBrightness = 4;
+byte matrixBrightness;
 
 //  Game sound
 const int soundAddress = matrixBrightnessAddress + sizeof(matrixBrightness);
@@ -200,13 +164,6 @@ void setup() {
     matrix.setBrightness(matrixBrightness);
     display.setBrightness(lcdBrightness);
 
-    // EEPROM.put(mapsAddress + sizeof(Map) * 0, levelMap);
-    // EEPROM.put(mapsAddress + sizeof(Map) * 1, levelMap);
-    // EEPROM.put(mapsAddress + sizeof(Map) * 2, levelMap);
-    // EEPROM.put(mapsAddress + sizeof(Map) * 3, levelMap);
-    // EEPROM.put(mapsAddress + sizeof(Map) * 4, levelMap);
-    EEPROM.put(mapsAddress + sizeof(Map) * 5, levelMap);
-
     matrixInit();
     showIntroMessage();
 }
@@ -225,6 +182,7 @@ void loop() {
 
 }
 
+//  Sounds for navigating the menu and for moving the player
 void gameSound(const int move) {
     if (sound && gameState != IN_GAME && move != NO_MOVE) {
         buzzer.playMelody(menuNote, menuNoteDurations, menuNoteLength);
@@ -235,6 +193,7 @@ void gameSound(const int move) {
     }
 }
 
+//  Initialize the current level
 void matrixInit() {
     EEPROM.get(mapsAddress + sizeof(Map) * (level - 1), levelMap);
 
@@ -250,7 +209,7 @@ void matrixInit() {
         matrix.matrixMap[levelMap.bombs[i].x][levelMap.bombs[i].y] = BOMB;
 
         for (int k = 0; k < 4; k++) {
-            if ( matrix.matrixMap[levelMap.bombs[i].x + matrix.directions[k][0]][levelMap.bombs[i].y + matrix.directions[k][1]] != WALL) {
+            if (matrix.matrixMap[levelMap.bombs[i].x + matrix.directions[k][0]][levelMap.bombs[i].y + matrix.directions[k][1]] != WALL) {
                 matrix.matrixMap[levelMap.bombs[i].x + matrix.directions[k][0]][levelMap.bombs[i].y + matrix.directions[k][1]] = RED_LED;
             }
         }
@@ -278,6 +237,7 @@ void matrixInit() {
 ////////////////////////////////////////////////////////////////  Display  ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//  Functions that help with the menu navigation
 MenuState previousMenuState(const MenuState state) {
     return (state - 1 + menuSize) % menuSize;
 }
@@ -323,6 +283,7 @@ void showIntroMessage() {
     display.lcd.print(F("Maze Quest!"));
 }
 
+//  Print one section of the menu on the specified lcd row
 void showMenuRow(const MenuState menuRow, const byte LcdRow) {
     display.lcd.setCursor(3, LcdRow);
 
@@ -842,6 +803,7 @@ void mainMenu(const int move) {
             break;
         }
         case LEFT: {
+            //  Change level
             if (menuRow == SELECT_LEVEL && level > 1) {
                 level --;
                 EEPROM.put(levelAddress, level);
@@ -863,6 +825,7 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                //  Change level
                 case SELECT_LEVEL: {
                     if (level < nrLevels) {
                         level ++;
@@ -874,6 +837,7 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                //  Enter highscores section
                 case HIGHSCORES: {
                     menuState = HIGHSCORES;
                     highscoreLevel = 1;
@@ -883,6 +847,7 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                //  Enter how to play section
                 case HOW_TO_PLAY: {
                     menuState = HOW_TO_PLAY;
                     howToPlayRow = 1;
@@ -891,6 +856,7 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                //  Enter settings section
                 case SETTINGS: {
                     menuState = SETTINGS;
                     settingsState = LCD_BRIGHTNESS;
@@ -899,6 +865,7 @@ void mainMenu(const int move) {
 
                     break;
                 }
+                //  Enter about section
                 case ABOUT: {
                     menuState = ABOUT;
                     aboutState = GAME;

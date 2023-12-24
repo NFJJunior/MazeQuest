@@ -160,13 +160,13 @@ struct Matrix {
     Position playerPosition = {1, 1};
     byte playerLedState = HIGH;
 
-    //  Map
     static const byte maxMatrixSize = 24;
     static const byte fogOfViewSize = 8;
 
     //  The position of top-left corner of the fog of view
     Position corner = {0, 0};
 
+    //  Map
     byte matrixSize = 8;
     byte matrixMap[maxMatrixSize][maxMatrixSize];
 
@@ -179,12 +179,18 @@ struct Matrix {
     //  Key
     Position keyPosition;
     bool hasKey = false;
+
+    //  Flag for picked up sound
     bool hasPickedUp = false;
 
     //  Door
-    const Position doorPositions[2] = {{4, 6}, {8, 9}};
     Position doorPosition;
     byte doorLedState = HIGH;
+
+    //  The position of doors from all levels with key
+    //  This should be inside the map struct, but I didn't have
+    //  any memory left in the EEPROM       
+    static const Position doorPositions[2] = {{4, 6}, {8, 9}};
 
     //  The four directions the player can go to
     const int directions[4][2] = {
@@ -242,12 +248,14 @@ struct Matrix {
 
                 break;
             }
+            //  Lose game
             case BOMB: {
                 gameLost = true;
                 gameLostTime = millis();
 
                 break;
             }
+            //  Pick up key and empty the place
             case KEY: {
                 playerPosition.x = temp.x;
                 playerPosition.y = temp.y;
@@ -264,6 +272,7 @@ struct Matrix {
 
                 break;
             }
+            //  If you have the key, go through the door
             case DOOR: {
                 if (hasKey) {
                     playerPosition.x = temp.x;
@@ -304,6 +313,7 @@ struct Matrix {
         corner.y = (byte)min(max(0, (int)playerPosition.y - 3), matrixSize - fogOfViewSize);
     }
 
+    //  Get the game to the initial state   
     void resetGame() {
         playerPosition.x = 1;
         playerPosition.y = 1;
