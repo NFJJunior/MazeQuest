@@ -22,9 +22,11 @@ The yellow light signals that you are near the key.
 ## Instructions
 The player starts from the top-left corner. When the red LED is on, a bomb is adjacent to the player position in one of the 4 possible directions: UP, DOWN, LEFT or RIGHT.
 
-Two bombs cannot be adjacent to each other. Two bombs cannot light up the same place. Because of these rules, the following bombs placements are not possible:
+Two bombs cannot be adjacent to each other. Two bombs cannot light up the same place. Because of these rules, the following bombs placements are illegal:
 
 -X &nbsp; &nbsp; &nbsp; &nbsp; -XX- &nbsp; &nbsp; &nbsp; &nbsp; -X-X- <br/> X-
+
+Using the illegal placements, the player can logically navigate the maze and emerge victorious.
 
 The yellow LED is on when you are adjacent to the key.
 
