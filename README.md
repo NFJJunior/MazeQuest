@@ -1,5 +1,5 @@
 # MazeQuest
-8x8 LED Matrix game for IntrodoctionToRobotics course
+Matrix game project for IntroductionToRobotics course, Faculty of Mathematics and Computer Science, University of Bucharest.
 
 ## Backstory
 
